@@ -110,7 +110,6 @@ files_to_generate = [
     "inference/delete-inference.asciidoc",
     "inference/post-inference.asciidoc",
     "inference/put-inference.asciidoc"
-
 ]
 
 
