@@ -31,7 +31,10 @@ class InferenceClient(NamespacedClient):
         *,
         inference_id: str,
         task_type: t.Optional[
-            t.Union["t.Literal['sparse_embedding', 'text_embedding']", str]
+            t.Union[
+                "t.Literal['completion', 'rerank', 'sparse_embedding', 'text_embedding']",
+                str,
+            ]
         ] = None,
         error_trace: t.Optional[bool] = None,
         filter_path: t.Optional[t.Union[str, t.Sequence[str]]] = None,
@@ -85,7 +88,10 @@ class InferenceClient(NamespacedClient):
         *,
         inference_id: str,
         task_type: t.Optional[
-            t.Union["t.Literal['sparse_embedding', 'text_embedding']", str]
+            t.Union[
+                "t.Literal['completion', 'rerank', 'sparse_embedding', 'text_embedding']",
+                str,
+            ]
         ] = None,
         error_trace: t.Optional[bool] = None,
         filter_path: t.Optional[t.Union[str, t.Sequence[str]]] = None,
@@ -134,7 +140,7 @@ class InferenceClient(NamespacedClient):
         )
 
     @_rewrite_parameters(
-        body_fields=("input", "task_settings"),
+        body_fields=("input", "query", "task_settings"),
     )
     def inference(
         self,
@@ -142,12 +148,16 @@ class InferenceClient(NamespacedClient):
         inference_id: str,
         input: t.Optional[t.Union[str, t.Sequence[str]]] = None,
         task_type: t.Optional[
-            t.Union["t.Literal['sparse_embedding', 'text_embedding']", str]
+            t.Union[
+                "t.Literal['completion', 'rerank', 'sparse_embedding', 'text_embedding']",
+                str,
+            ]
         ] = None,
         error_trace: t.Optional[bool] = None,
         filter_path: t.Optional[t.Union[str, t.Sequence[str]]] = None,
         human: t.Optional[bool] = None,
         pretty: t.Optional[bool] = None,
+        query: t.Optional[str] = None,
         task_settings: t.Optional[t.Any] = None,
         body: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> ObjectApiResponse[t.Any]:
@@ -159,6 +169,7 @@ class InferenceClient(NamespacedClient):
         :param inference_id: The inference Id
         :param input: Text input to the model. Either a string or an array of strings.
         :param task_type: The task type
+        :param query: Query input, required for rerank task. Not required for other tasks.
         :param task_settings: Optional task settings
         """
         if inference_id in SKIP_IN_PATH:
@@ -190,6 +201,8 @@ class InferenceClient(NamespacedClient):
         if not __body:
             if input is not None:
                 __body["input"] = input
+            if query is not None:
+                __body["query"] = query
             if task_settings is not None:
                 __body["task_settings"] = task_settings
         if not __body:
@@ -214,14 +227,17 @@ class InferenceClient(NamespacedClient):
         self,
         *,
         inference_id: str,
+        model_config: t.Optional[t.Mapping[str, t.Any]] = None,
+        body: t.Optional[t.Mapping[str, t.Any]] = None,
         task_type: t.Optional[
-            t.Union["t.Literal['sparse_embedding', 'text_embedding']", str]
+            t.Union[
+                "t.Literal['completion', 'rerank', 'sparse_embedding', 'text_embedding']",
+                str,
+            ]
         ] = None,
         error_trace: t.Optional[bool] = None,
         filter_path: t.Optional[t.Union[str, t.Sequence[str]]] = None,
         human: t.Optional[bool] = None,
-        model_config: t.Optional[t.Mapping[str, t.Any]] = None,
-        body: t.Optional[t.Mapping[str, t.Any]] = None,
         pretty: t.Optional[bool] = None,
     ) -> ObjectApiResponse[t.Any]:
         """
@@ -230,8 +246,8 @@ class InferenceClient(NamespacedClient):
         `<https://www.elastic.co/guide/en/elasticsearch/reference/master/put-inference-api.html>`_
 
         :param inference_id: The inference Id
-        :param task_type: The task type
         :param model_config:
+        :param task_type: The task type
         """
         if inference_id in SKIP_IN_PATH:
             raise ValueError("Empty value passed for parameter 'inference_id'")
@@ -263,11 +279,7 @@ class InferenceClient(NamespacedClient):
         if pretty is not None:
             __query["pretty"] = pretty
         __body = model_config if model_config is not None else body
-        if not __body:
-            __body = None
-        __headers = {"accept": "application/json"}
-        if __body is not None:
-            __headers["content-type"] = "application/json"
+        __headers = {"accept": "application/json", "content-type": "application/json"}
         return self.perform_request(  # type: ignore[return-value]
             "PUT",
             __path,
